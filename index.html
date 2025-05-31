@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interactive 2D Circles</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background-color: #ffffff;
+    }
+    #canvas-container {
+      width: 100vw;
+      height: 100vh;
+      position: fixed;
+      top: 0;
+      left: 0;
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+</head>
+<body>
+<div id="canvas-container"></div>
+
+<script>
+let circles = [];
+let minRadius = 5;
+let maxRadius = 30;
+let numCircles = 200;
+let returnFactor = 20;
+let pickedCircle = null;
+let canvas;
+let w, h;
+
+function setup() {
+  w = windowWidth;
+  h = windowHeight;
+  canvas = createCanvas(w, h);
+  canvas.parent('canvas-container');
+  noStroke();
+  
+  if(w >= 1280){
+    maxRadius = 60;
+    numCircles = 150;  	
+  }
+  
+  if(w < 1280 && w > 478){
+    maxRadius = 40;
+    numCircles = 100;
+  }
+  
+  if(w <= 478){
+    maxRadius = 60;
+    numCircles = 40;  	
+  }
+  
+  for (let i = 0; i < numCircles; i++) {
+    let x = random(maxRadius, w - maxRadius);
+    let y = random(maxRadius, h - maxRadius);
+    let r = random(minRadius, maxRadius);
+    let circle = new Circle(x, y, r);
+    circles.push(circle);
+  }
+}
+
+function draw() {
+  background(255);
+  
+  for (let i = 0; i < circles.length; i++) {
+    for (let j = i + 1; j < circles.length; j++) {
+      let c1 = circles[i];
+      let c2 = circles[j];
+      let d = dist(c1.x, c1.y, c2.x, c2.y);
+      let minDist = c1.r + c2.r;
+      
+      if (d < minDist) {
+        let angle = atan2(c2.y - c1.y, c2.x - c1.x);
+        let dx = (minDist - d) * cos(angle) / 2;
+        let dy = (minDist - d) * sin(angle) / 2;
+        c1.x -= dx;
+        c1.y -= dy;
+        c2.x += dx;
+        c2.y += dy;
+      }
+    }
+  }
+  
+
+  for (let i = 0; i < circles.length; i++) {
+    let circle = circles[i];
+    if (circle === pickedCircle) {
+      circle.x = constrain(mouseX, circle.r, w - circle.r);
+      circle.y = constrain(mouseY, circle.r, h - circle.r);
+      fill(1, 167, 42);
+    } else {
+      circle.resetPosition();
+      fill(0, 0, 0);
+    }
+    circle.draw();
+  }
+}
+
+function mousePressed() {
+  for (let i = 0; i < circles.length; i++) {
+    let circle = circles[i];
+    let d = dist(mouseX, mouseY, circle.x, circle.y);
+    if (d < circle.r) {
+      pickedCircle = circle;
+      break;
+    }
+  }
+}
+
+function mouseReleased() {
+  pickedCircle = null;
+}
+
+function windowResized() {
+  w = windowWidth;
+  h = windowHeight;
+  resizeCanvas(w, h);
+  
+  for (let circle of circles) {
+    circle.x = constrain(circle.x, circle.r, w - circle.r);
+    circle.y = constrain(circle.y, circle.r, h - circle.r);
+    circle.originalX = constrain(circle.originalX, circle.r, w - circle.r);
+    circle.originalY = constrain(circle.originalY, circle.r, h - circle.r);
+  }
+}
+
+class Circle {
+  constructor(x, y, r) {
+    this.x = x;
+    this.y = y;
+    this.r = r;
+    this.originalX = x;
+    this.originalY = y;
+  }
+  
+  draw() {
+    ellipse(this.x, this.y, this.r * 2, this.r * 2);
+  }
+  
+  resetPosition() {
+    if (this.x !== this.originalX || this.y !== this.originalY) {
+      let dx = this.originalX - this.x;
+      let dy = this.originalY - this.y;
+      this.x += dx / returnFactor;
+      this.y += dy / returnFactor;
+    }
+  }
+}
+</script>
+</body>
+</html>
